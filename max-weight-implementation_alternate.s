@@ -42,8 +42,8 @@ m2: .word 0x33333333;
 m4: .word 0xf0f0f0f;
 h01: .word 0x0000007f;
 
-num: .word 0
-weight: .word 0
+num: .word 0;
+weight: .word 0;
         
 
   @ TEXT section
@@ -63,36 +63,39 @@ _main:
 	   CMP r0, #0;
 	   BEQ done;	           @ break if there are no elements i.e. length is 0
 	   
+	   LDR r4, =m1;            @ loading these predefined values upfront to avoid memory reads for each element
+	   LDR r7, [r4];           @ read value of m1
+	   
+	   LDR r4, =m2;            @ read value of m2
+	   LDR r8, [r4];
+	   
+	   LDR r4, =m4;            @ read value of m4
+	   LDR r9, [r4];
+	   
+	   LDR r4, =h01;           @ read value of h01
+	   LDR r10, [r4];
+	   
 	   LDR r4, =data_start;    @ load data_start starting address into register r4
 	   
 	   
 loop:  LDR r3, [r4], #4;       @ Looping through all the elements in the list, register r3 holds the number read
 	   EOR r5, r5, r5;         @ Register r5 to hold the partially computed weight
-	   	   
-	   LDR r6, =m1;            @ read value of m1
-	   LDR r7, [r6];
+	   	   	  
 	   AND r5, r7, r3, LSR #1; @ x -= (x >> 1) & m1
 	   SUB r5, r3, r5;         @ put count of each 2 bits into those 2 bits
-	   
-	   LDR r6, =m2;            @ read value of m2
-	   LDR r8, [r6];
-	   
-	   EOR r6, r6, r6;
-	   AND r6, r8, r5, LSR #2; @ x = (x & m2) + ((x >> 2) & m2)	
+	   	  
+	   EOR r6, r6, r6;         @ x = (x & m2) + ((x >> 2) & m2)	
+	   AND r6, r8, r5, LSR #2; @ Register r6 holds intermediate results
 	   AND r5, r5, r8;
 	   ADD r5, r5, r6;         @ put count of each 4 bits into those 4 bits 
 	   
-	   ADD r5, r5, r5, LSR #4; @ x = (x + (x >> 4)) & m4   	  
-	   LDR r6, =m4;            @ read value of m4
-	   LDR r9, [r6];	
+	   ADD r5, r5, r5, LSR #4; @ x = (x + (x >> 4)) & m4   	  	  
 	   AND r5, r5, r9;        
 	   
 	   ADD r5, r5, r5, LSR #8; @ x += x >>  8, put count of each 16 bits into their lowest 8 bits
 	   ADD r5, r5, r5, LSR #16;@ x += x >> 16, put count of each 32 bits into their lowest 8 bits
-	   	   
-	   LDR r6, =h01;           @ read value of h01
-	   LDR r9, [r6];	
-	   AND r5, r5, r9;         @ Lower order 8 bits has the count
+	   	   	 
+	   AND r5, r5, r10;        @ Lower order 8 bits has the count
 	   
 	   CMP r5, r2;             @ Compare with the current max weight
 	   BMI continue;           @ Proceed if the count is lesser than the current max weight
